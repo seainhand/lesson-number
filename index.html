@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>算课数工具</title>
+        <style>
+            .img {
+                width: 500px;
+                height: auto;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="">
+            <h2>第一步</h2>
+            <p>1.将数据整理为如下形式</p>
+            <p>（1）必有 课节日期、学部、班级名称 这三列</p>
+            <p>（2）列名必须要有（下图看不清请右键于新标签页打开图片）</p>
+            <img src="./excel.png" alt="" class="img" />
+        </div>
+        <div class="">
+            <h2>第二步</h2>
+            <p>
+                1.打开如下网址
+                <a href="http://www.qqe2.com/jsontool/excel2json"
+                    >http://www.qqe2.com/jsontool/excel2json</a
+                >
+            </p>
+            <p>2.将excel表中的数据copy到打开网页的第一个输入框</p>
+            <p>3.点击“将行转化为数组”</p>
+            <p>4.生成如下数据</p>
+            <img src="./json.png" alt="" class="img" />
+        </div>
+        <div class="">
+            <h2>第三步</h2>
+            <p>1.将生成的数据copy到下面左侧输入框</p>
+            <p>2.点击计算</p>
+            <p>3.生成右侧输入框中的数据</p>
+            <p>4.右侧输入框的数据即为需要数据</p>
+        </div>
+        输入数据：
+        <textarea id="inner" name="" id="" cols="80" rows="30"></textarea>
+        <button onclick="handleClick()">计算</button>
+        输出数据：
+        <textarea id="outer" name="" id="" cols="80" rows="30"></textarea>
+        <script>
+            var defaultPrevData =
+            '[\n'+
+            '   {\n'+
+            '       "主讲老师": "李娜(高途课堂-初中部)",\n'+
+            '       "学部": "初中",\n'+
+            '       "课程ID": "3684890945191424",\n'+
+            '       "课程名称": "【2019-秋】九年级数学提高班（全国）",\n'+
+            '       "班级名称": "【2019-秋】九年级数学提高班（全国）",\n'+
+            '       "课节日期": "2019-12-28"\n'+
+            '    },\n'+
+            '    {\n'+
+            '       "主讲老师": "李娜(高途课堂-初中部)",\n'+
+            '       "学部": "初中",\n'+
+            '       "课程ID": "3684890945191424",\n'+
+            '       "课程名称": "【2019-秋】九年级数学提高班（全国）",\n'+
+            '       "班级名称": "【2019-秋】九年级数学提高班（全国）",\n'+
+            '       "课节日期": "2019-12-21"\n'+
+            '   }\n'+
+            ']\n'
+            document.getElementById('inner').value = defaultPrevData;
+            document.getElementById('outer').value = '2019-12-21 0 0 0 1 0 0\n'+'2019-12-28 0 0 0 1 0 0'
+
+        </script>
+    </body>
+</html>
+
+<script>
+    const lessonDayName = '课节日期';
+    const xuebuName = '学部';
+    const classNameName = '班级名称';
+    const dayListToK12List = dayList => {
+        const dataMap = { 小学: [], 初中: [], 高中: [] };
+        dayList.map(data => {
+            const xuebu = data[xuebuName];
+            dataMap[xuebu].push(data);
+        });
+        return dataMap;
+    };
+
+    const xuebuListToMoniList = xuebuList => {
+        const dataMap = { 模拟: [], 正价: [] };
+        xuebuList.map(data => {
+            const className = data[classNameName];
+            if (className.indexOf('模拟课堂') > -1) {
+                dataMap['模拟'].push(data);
+            } else {
+                dataMap['正价'].push(data);
+            }
+        });
+        return dataMap;
+    };
+
+    const handleClick = () => {
+        document.getElementById('outer').value = ''
+        const datas = JSON.parse(document.getElementById('inner').value.trim());
+        const dataMap = {};
+
+        datas.map(data => {
+            const lessonDay = data[lessonDayName];
+            if (dataMap[lessonDay]) {
+                dataMap[lessonDay].push(data);
+            } else {
+                dataMap[lessonDay] = [];
+                dataMap[lessonDay].push(data);
+            }
+        });
+
+        Object.keys(dataMap).map(lessonDay => {
+            const dayList = dataMap[lessonDay];
+            // console.log(lessonDay, dataMap[lessonDay].length)
+        });
+
+        Object.keys(dataMap).map(lessonDay => {
+            const dayList = dataMap[lessonDay];
+            dataMap[lessonDay] = dayListToK12List(dayList);
+        });
+
+        Object.keys(dataMap).map(lessonDay => {
+            const dayMap = dataMap[lessonDay];
+            Object.keys(dayMap).map(xuebu => {
+                const xuebuList = dayMap[xuebu];
+                dayMap[xuebu] = xuebuListToMoniList(xuebuList);
+            });
+        });
+
+        const dataMap2 = {};
+        Object.keys(dataMap)
+            .sort()
+            .forEach(function(key) {
+                dataMap2[key] = dataMap[key];
+            });
+
+        Object.keys(dataMap2).map(lessonDay => {
+            const dayMap = dataMap[lessonDay];
+            const row = [
+                lessonDay,
+                dayMap['小学']['模拟'].length,
+                dayMap['小学']['正价'].length,
+                dayMap['初中']['模拟'].length,
+                dayMap['初中']['正价'].length,
+                dayMap['高中']['模拟'].length,
+                dayMap['高中']['正价'].length
+            ].join(' ');
+            document.getElementById('outer').value =
+                document.getElementById('outer').value + row + '\n';
+        });
+    };
+</script>
